@@ -1,0 +1,27 @@
+version: '3.8'
+
+services:
+  router1:
+    build: ./router
+    networks:
+      r1_net:
+        ipv4_address: 10.10.1.1
+
+  host1:
+    build: ./host
+    networks:
+      r1_net:
+        ipv4_address: 10.10.1.10
+
+  host2:
+    build: ./host
+    networks:
+      r1_net:
+        ipv4_address: 10.10.1.11
+
+networks:
+  r1_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.1.0/24
