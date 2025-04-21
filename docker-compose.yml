@@ -13,11 +13,15 @@ services:
 
   host1:
     build: ./host
+    depends_on:
+      - router1
     networks:
       - subnet1
 
   host2:
     build: ./host
+    depends_on:
+      - router1
     networks:
       - subnet1
 
@@ -33,11 +37,15 @@ services:
 
   host3:
     build: ./host
+    depends_on:
+      - router2
     networks:
       - subnet2
 
   host4:
     build: ./host
+    depends_on:
+      - router2
     networks:
       - subnet2
 
@@ -53,11 +61,15 @@ services:
 
   host5:
     build: ./host
+    depends_on:
+      - router3
     networks:
       - subnet3
 
   host6:
     build: ./host
+    depends_on:
+      - router3
     networks:
       - subnet3
 
