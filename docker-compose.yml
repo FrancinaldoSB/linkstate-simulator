@@ -2,26 +2,150 @@ version: '3.8'
 
 services:
   router1:
-    build: ./router
+    build: 
+      context: ./ # ou o diretório correto onde está o Dockerfile
+      dockerfile: router/Dockerfile  # Caminho para o Dockerfile dentro de 'router'
+    command: python ./router/router_main.py --id R1 --port 5001 --neighbors R2=1,R3=3
     networks:
-      r1_net:
-        ipv4_address: 10.10.1.1
+      - subnet1
+      - subnet2
+    restart: on-failure
 
   host1:
     build: ./host
     networks:
-      r1_net:
-        ipv4_address: 10.10.1.10
+      - subnet1
 
   host2:
     build: ./host
     networks:
-      r1_net:
-        ipv4_address: 10.10.1.11
+      - subnet1
+
+  router2:
+    build: 
+      context: ./ # ou o diretório correto onde está o Dockerfile
+      dockerfile: router/Dockerfile  # Caminho para o Dockerfile dentro de 'router'
+    command: python ./router/router_main.py --id R2 --port 5002 --neighbors R1=1,R3=2
+    networks:
+      - subnet2
+      - subnet3
+    restart: on-failure
+
+  host3:
+    build: ./host
+    networks:
+      - subnet2
+
+  host4:
+    build: ./host
+    networks:
+      - subnet2
+
+  router3:
+    build:
+      context: ./ # ou o diretório correto onde está o Dockerfile
+      dockerfile: router/Dockerfile  # Caminho para o Dockerfile dentro de 'router'
+    command: python ./router/router_main.py --id R3 --port 5003 --neighbors R1=3,R2=2
+    networks:
+      - subnet3
+      - subnet1
+    restart: on-failure
+
+  host5:
+    build: ./host
+    networks:
+      - subnet3
+
+  host6:
+    build: ./host
+    networks:
+      - subnet3
 
 networks:
-  r1_net:
+  subnet1:
     driver: bridge
-    ipam:
-      config:
-        - subnet: 10.10.1.0/24
+  subnet2:
+    driver: bridge
+  subnet3:
+    driver: bridge
+
+
+
+# version: '3.8'
+
+# services:
+
+#   router1:
+#     build: ./router
+#     command: python router_main.py --id R1 --port 5001 --neighbors R2=1,R3=3
+#     networks:
+#       - subnet1
+
+#   host1:
+#     build: ./host
+#     networks:
+#       - subnet1
+
+#   host2:
+#     build: ./host
+#     networks:
+#       - subnet1
+
+#   router2:
+#     build: ./router
+#     command: python router_main.py --id R2 --port 5002 --neighbors R1=1,R3=2
+#     networks:
+#       - subnet2
+
+#   host3:
+#     build: ./host
+#     networks:
+#       - subnet2
+
+#   host4:
+#     build: ./host
+#     networks:
+#       - subnet2
+
+#   router3:
+#     build: ./router
+#     command: python router_main.py --id R3 --port 5003 --neighbors R1=3,R2=2
+#     networks:
+#       - subnet3
+
+#   host5:
+#     build: ./host
+#     networks:
+#       - subnet3
+
+#   host6:
+#     build: ./host
+#     networks:
+#       - subnet3
+
+# networks:
+#   subnet1:
+#     driver: bridge
+#   subnet2:
+#     driver: bridge
+#   subnet3:
+#     driver: bridge
+
+# networks:
+#   subnet1:
+#     driver: bridge
+#     ipam:
+#       config:
+#         - subnet: 172.28.1.0/24
+
+#   subnet2:
+#     driver: bridge
+#     ipam:
+#       config:
+#         - subnet: 172.28.2.0/24
+
+#   subnet3:
+#     driver: bridge
+#     ipam:
+#       config:
+#         - subnet: 172.28.3.0/24

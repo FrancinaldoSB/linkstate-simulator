@@ -1,33 +1,59 @@
 import threading
 import socket
 import json
-import time  # Faltava importar
+import time
 import sys
 import os
+import argparse
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Adicionando o diretório raiz do projeto ao sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), 'utils')))
 
 from dijkstra import calculate_routes
 from link_state_packet import LinkStatePacket
 from utils.logger import log
 
 # ========================
-# Configurações Fixas (por enquanto)
+# Argumentos de entrada
 # ========================
-ROUTER_ID = "R1"
-NEIGHBORS = {"R2": 1, "R3": 3} # Nome do roteador vizinho e custo do enlace
+
+parser = argparse.ArgumentParser(description="Roteador com algoritmo de estado de enlace")
+parser.add_argument('--id', required=True, help='ID do roteador (ex: R1)')
+parser.add_argument('--port', type=int, required=True, help='Porta local para escutar pacotes')
+parser.add_argument('--neighbors', required=True, help='Lista de vizinhos no formato R2=1,R3=3')
+
+args = parser.parse_args()
+
+ROUTER_ID = args.id
+PORT = args.port
+
+# Ex: R2=1,R3=3 → {'R2': 1, 'R3': 3}
+NEIGHBORS = dict((n.split('=')[0], int(n.split('=')[1])) for n in args.neighbors.split(','))
+
+# ========================
+# Configurações fixas
+# ========================
 
 ROUTER_IPS = {
-    "R1": "127.0.0.1",
-    "R2": "127.0.0.1",
-    "R3": "127.0.0.1"
+    "R1": "router1",
+    "R2": "router2",
+    "R3": "router3"
 }
 
-# ========================
-# Tabelas do roteador
-# ========================
-LSDB = {}            # Link State Database
-ROUTING_TABLE = {}   # Tabela de roteamento
+PORTS = {
+    "R1": 5001,
+    "R2": 5002,
+    "R3": 5003
+}
+
+LSDB = {
+    ROUTER_ID: {
+        "router_id": ROUTER_ID,
+        "neighbors": NEIGHBORS
+    }
+}
+
+ROUTING_TABLE = {}
 
 # ========================
 # Funções de rede
@@ -38,8 +64,8 @@ def get_ip_for_router(router_id):
 
 def receive_packets():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    sock.bind(('', 5002))
-    log(f"{ROUTER_ID} aguardando pacotes...")
+    sock.bind(('', PORT))
+    log(f"{ROUTER_ID} aguardando pacotes na porta {PORT}...")
     while True:
         data, _ = sock.recvfrom(4096)
         packet = json.loads(data.decode())
@@ -52,17 +78,20 @@ def send_packets():
         packet = LinkStatePacket(ROUTER_ID, NEIGHBORS).to_json()
         for neighbor in NEIGHBORS:
             ip = get_ip_for_router(neighbor)
-            sock.sendto(packet.encode(), (ip, 5000))
+            sock.sendto(packet.encode(), (ip, PORTS[neighbor]))
         log(f"{ROUTER_ID} enviou pacote para vizinhos: {list(NEIGHBORS.keys())}")
         time.sleep(5)
 
 def update_routing_table():
     global ROUTING_TABLE
+    if not all(neighbor in LSDB for neighbor in NEIGHBORS):
+        log(f"{ROUTER_ID} aguardando vizinhos na LSDB...")
+        return
     ROUTING_TABLE = calculate_routes(ROUTER_ID, LSDB)
     log(f"{ROUTER_ID} atualizou tabela de rotas: {ROUTING_TABLE}")
 
 # ========================
-# Execução principal
+# Execução
 # ========================
 if __name__ == "__main__":
     threading.Thread(target=receive_packets).start()
