@@ -8,7 +8,10 @@ COPY ../utils /app/utils
 COPY . .
 
 # Instalando o comando ping
-RUN apt-get update && apt-get install -y iputils-ping
+RUN apt-get update && apt-get install -y iputils-ping \ 
+    iproute2 \
+    iputils-ping \
+    net-tools
 
 # Definir PYTHONPATH para que o Python saiba onde procurar os módulos
 ENV PYTHONPATH=/app/utils:$PYTHONPATH

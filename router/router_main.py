@@ -74,13 +74,23 @@ def receive_packets():
 
 def send_packets():
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    intervalo_envio = 5
+    proximo_envio = time.time()
+
     while True:
-        packet = LinkStatePacket(ROUTER_ID, NEIGHBORS).to_json()
-        for neighbor in NEIGHBORS:
-            ip = get_ip_for_router(neighbor)
-            sock.sendto(packet.encode(), (ip, PORTS[neighbor]))
-        log(f"{ROUTER_ID} enviou pacote para vizinhos: {list(NEIGHBORS.keys())}")
-        time.sleep(5)
+        agora = time.time()
+        if agora >= proximo_envio:
+            packet = LinkStatePacket(ROUTER_ID, NEIGHBORS).to_json()
+            for neighbor in NEIGHBORS:
+                try:
+                    ip = get_ip_for_router(neighbor)
+                    sock.sendto(packet.encode(), (ip, PORTS[neighbor]))
+                except socket.gaierror as e:
+                    log(f"{ROUTER_ID} falhou ao resolver {neighbor}: {e}")
+                except Exception as e:
+                    log(f"{ROUTER_ID} erro ao enviar para {neighbor}: {e}")
+            log(f"{ROUTER_ID} enviou pacote para vizinhos: {list(NEIGHBORS.keys())}")
+            proximo_envio = agora + intervalo_envio
 
 def update_routing_table():
     global ROUTING_TABLE
