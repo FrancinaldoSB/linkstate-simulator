@@ -1,19 +1,10 @@
-FROM python:3.10
+FROM python:3.9-slim
+
 WORKDIR /app
 
-
-
-COPY ../utils /app/utils
+RUN apt-get update && apt-get install -y iproute2 iputils-ping
 
 COPY . .
 
-# Instalando o comando ping
-RUN apt-get update && apt-get install -y iputils-ping \ 
-    iproute2 \
-    iputils-ping \
-    net-tools
-
-# Definir PYTHONPATH para que o Python saiba onde procurar os módulos
-ENV PYTHONPATH=/app/utils:$PYTHONPATH
-
-CMD ["python", "router_main.py"]
+CMD ["python", "router.py"]
+# CMD ["python", "router.py", "--config", "config.json"]

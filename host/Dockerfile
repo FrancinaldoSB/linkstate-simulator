@@ -1,8 +1,8 @@
-FROM python:3.10
+FROM python:3.11-slim
+RUN apt-get update && apt-get install -y \
+    net-tools \
+    iproute2 \
+    iputils-ping
+COPY . /app
 WORKDIR /app
-
-# Instalando o comando ping
-RUN apt-get update && apt-get install -y iputils-ping
-
-COPY . .
-CMD ["python", "host.py"]
+CMD ["python", "main.py"]
