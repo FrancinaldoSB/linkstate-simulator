@@ -162,6 +162,21 @@ class Router:
     
     def _configurar_rotas_iniciais(self):
         log(f"{self.id} configurando rotas iniciais...")
+        
+        # Ativar IP Forwarding - método alternativo que não depende do sysctl
+        try:
+            # Primeiro tentamos usar sysctl se estiver disponível
+            subprocess.run(["sysctl", "-w", "net.ipv4.ip_forward=1"], check=False)
+            log(f"{self.id} IP Forwarding ativado via sysctl")
+        except FileNotFoundError:
+            # Se sysctl não estiver disponível, tentamos escrever diretamente no arquivo
+            try:
+                with open("/proc/sys/net/ipv4/ip_forward", "w") as f:
+                    f.write("1")
+                log(f"{self.id} IP Forwarding ativado via /proc/sys/net/ipv4/ip_forward")
+            except Exception as e:
+                log(f"{self.id} Não foi possível ativar IP Forwarding: {e}. O encaminhamento de pacotes pode não funcionar.")
+        
         # Configurar interfaces com endereços IP
         interfaces = subprocess.run(["ip", "addr"], capture_output=True, text=True, check=False).stdout
         log(f"{self.id} interfaces: {interfaces}")

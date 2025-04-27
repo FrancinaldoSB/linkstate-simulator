@@ -29,9 +29,9 @@ services:
       subnet_2:
         ipv4_address: 172.20.2.3
       subnet_1:
-        ipv4_address: 172.20.1.2
+        ipv4_address: 172.20.1.5
       subnet_3:
-        ipv4_address: 172.20.3.4
+        ipv4_address: 172.20.3.5
     cap_add:
     - NET_ADMIN
   router3:
@@ -39,15 +39,148 @@ services:
       context: ./router
       dockerfile: Dockerfile
     environment:
-    - router_links=router2
+    - router_links=router2,router4
     - my_ip=172.20.3.3
     - my_name=router3
     - router2_ip=172.20.2.3
+    - router4_ip=172.20.4.3
     networks:
       subnet_3:
         ipv4_address: 172.20.3.3
       subnet_2:
-        ipv4_address: 172.20.2.2
+        ipv4_address: 172.20.2.6
+      subnet_4:
+        ipv4_address: 172.20.4.6
+    cap_add:
+    - NET_ADMIN
+  router4:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router3,router5
+    - my_ip=172.20.4.3
+    - my_name=router4
+    - router3_ip=172.20.3.3
+    - router5_ip=172.20.5.3
+    networks:
+      subnet_4:
+        ipv4_address: 172.20.4.3
+      subnet_3:
+        ipv4_address: 172.20.3.7
+      subnet_5:
+        ipv4_address: 172.20.5.7
+    cap_add:
+    - NET_ADMIN
+  router5:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router4,router6
+    - my_ip=172.20.5.3
+    - my_name=router5
+    - router4_ip=172.20.4.3
+    - router6_ip=172.20.6.3
+    networks:
+      subnet_5:
+        ipv4_address: 172.20.5.3
+      subnet_4:
+        ipv4_address: 172.20.4.8
+      subnet_6:
+        ipv4_address: 172.20.6.8
+    cap_add:
+    - NET_ADMIN
+  router6:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router5,router7
+    - my_ip=172.20.6.3
+    - my_name=router6
+    - router5_ip=172.20.5.3
+    - router7_ip=172.20.7.3
+    networks:
+      subnet_6:
+        ipv4_address: 172.20.6.3
+      subnet_5:
+        ipv4_address: 172.20.5.9
+      subnet_7:
+        ipv4_address: 172.20.7.9
+    cap_add:
+    - NET_ADMIN
+  router7:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router6,router8
+    - my_ip=172.20.7.3
+    - my_name=router7
+    - router6_ip=172.20.6.3
+    - router8_ip=172.20.8.3
+    networks:
+      subnet_7:
+        ipv4_address: 172.20.7.3
+      subnet_6:
+        ipv4_address: 172.20.6.10
+      subnet_8:
+        ipv4_address: 172.20.8.10
+    cap_add:
+    - NET_ADMIN
+  router8:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router7,router9
+    - my_ip=172.20.8.3
+    - my_name=router8
+    - router7_ip=172.20.7.3
+    - router9_ip=172.20.9.3
+    networks:
+      subnet_8:
+        ipv4_address: 172.20.8.3
+      subnet_7:
+        ipv4_address: 172.20.7.11
+      subnet_9:
+        ipv4_address: 172.20.9.11
+    cap_add:
+    - NET_ADMIN
+  router9:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router8,router10
+    - my_ip=172.20.9.3
+    - my_name=router9
+    - router8_ip=172.20.8.3
+    - router10_ip=172.20.10.3
+    networks:
+      subnet_9:
+        ipv4_address: 172.20.9.3
+      subnet_8:
+        ipv4_address: 172.20.8.12
+      subnet_10:
+        ipv4_address: 172.20.10.12
+    cap_add:
+    - NET_ADMIN
+  router10:
+    build:
+      context: ./router
+      dockerfile: Dockerfile
+    environment:
+    - router_links=router9
+    - my_ip=172.20.10.3
+    - my_name=router10
+    - router9_ip=172.20.9.3
+    networks:
+      subnet_10:
+        ipv4_address: 172.20.10.3
+      subnet_9:
+        ipv4_address: 172.20.9.13
     cap_add:
     - NET_ADMIN
   host1a:
@@ -56,54 +189,220 @@ services:
       dockerfile: Dockerfile
     networks:
       subnet_1:
-        ipv4_address: 172.20.1.10
+        ipv4_address: 172.20.1.100
     depends_on:
     - router1
+    cap_add:
+    - NET_ADMIN
   host1b:
     build:
       context: ./host
       dockerfile: Dockerfile
     networks:
       subnet_1:
-        ipv4_address: 172.20.1.11
+        ipv4_address: 172.20.1.110
     depends_on:
     - router1
+    cap_add:
+    - NET_ADMIN
   host2a:
     build:
       context: ./host
       dockerfile: Dockerfile
     networks:
       subnet_2:
-        ipv4_address: 172.20.2.10
+        ipv4_address: 172.20.2.100
     depends_on:
     - router2
+    cap_add:
+    - NET_ADMIN
   host2b:
     build:
       context: ./host
       dockerfile: Dockerfile
     networks:
       subnet_2:
-        ipv4_address: 172.20.2.11
+        ipv4_address: 172.20.2.110
     depends_on:
     - router2
+    cap_add:
+    - NET_ADMIN
   host3a:
     build:
       context: ./host
       dockerfile: Dockerfile
     networks:
       subnet_3:
-        ipv4_address: 172.20.3.10
+        ipv4_address: 172.20.3.100
     depends_on:
     - router3
+    cap_add:
+    - NET_ADMIN
   host3b:
     build:
       context: ./host
       dockerfile: Dockerfile
     networks:
       subnet_3:
-        ipv4_address: 172.20.3.11
+        ipv4_address: 172.20.3.110
     depends_on:
     - router3
+    cap_add:
+    - NET_ADMIN
+  host4a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_4:
+        ipv4_address: 172.20.4.100
+    depends_on:
+    - router4
+    cap_add:
+    - NET_ADMIN
+  host4b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_4:
+        ipv4_address: 172.20.4.110
+    depends_on:
+    - router4
+    cap_add:
+    - NET_ADMIN
+  host5a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_5:
+        ipv4_address: 172.20.5.100
+    depends_on:
+    - router5
+    cap_add:
+    - NET_ADMIN
+  host5b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_5:
+        ipv4_address: 172.20.5.110
+    depends_on:
+    - router5
+    cap_add:
+    - NET_ADMIN
+  host6a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_6:
+        ipv4_address: 172.20.6.100
+    depends_on:
+    - router6
+    cap_add:
+    - NET_ADMIN
+  host6b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_6:
+        ipv4_address: 172.20.6.110
+    depends_on:
+    - router6
+    cap_add:
+    - NET_ADMIN
+  host7a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_7:
+        ipv4_address: 172.20.7.100
+    depends_on:
+    - router7
+    cap_add:
+    - NET_ADMIN
+  host7b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_7:
+        ipv4_address: 172.20.7.110
+    depends_on:
+    - router7
+    cap_add:
+    - NET_ADMIN
+  host8a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_8:
+        ipv4_address: 172.20.8.100
+    depends_on:
+    - router8
+    cap_add:
+    - NET_ADMIN
+  host8b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_8:
+        ipv4_address: 172.20.8.110
+    depends_on:
+    - router8
+    cap_add:
+    - NET_ADMIN
+  host9a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_9:
+        ipv4_address: 172.20.9.100
+    depends_on:
+    - router9
+    cap_add:
+    - NET_ADMIN
+  host9b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_9:
+        ipv4_address: 172.20.9.110
+    depends_on:
+    - router9
+    cap_add:
+    - NET_ADMIN
+  host10a:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_10:
+        ipv4_address: 172.20.10.100
+    depends_on:
+    - router10
+    cap_add:
+    - NET_ADMIN
+  host10b:
+    build:
+      context: ./host
+      dockerfile: Dockerfile
+    networks:
+      subnet_10:
+        ipv4_address: 172.20.10.110
+    depends_on:
+    - router10
+    cap_add:
+    - NET_ADMIN
 networks:
   subnet_1:
     driver: bridge
@@ -120,3 +419,38 @@ networks:
     ipam:
       config:
       - subnet: 172.20.3.0/24
+  subnet_4:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.4.0/24
+  subnet_5:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.5.0/24
+  subnet_6:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.6.0/24
+  subnet_7:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.7.0/24
+  subnet_8:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.8.0/24
+  subnet_9:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.9.0/24
+  subnet_10:
+    driver: bridge
+    ipam:
+      config:
+      - subnet: 172.20.10.0/24
