@@ -6,4 +6,4 @@ RUN apt-get update && apt-get install -y iproute2 iputils-ping net-tools tracero
 
 COPY . .
 
-CMD ["python", "main.py"]
+CMD ["python", "host.py"]

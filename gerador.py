@@ -134,6 +134,8 @@ def main():
                 links[router].append(f"router{i-1}")
             if i < args.num_roteadores:
                 links[router].append(f"router{i+1}")
+        print("\nTopologia em Linha criada:")
+        print("  " + " -- ".join([f"router{i}" for i in range(1, args.num_roteadores + 1)]))
     
     elif args.tipo == 'anel':
         # Topologia em anel: r1 -- r2 -- r3 -- ... -- r1
@@ -146,6 +148,8 @@ def main():
             # Conecta com o próximo (ou o primeiro se for o último)
             next_r = f"router{1 if i == args.num_roteadores else i+1}"
             links[router].append(next_r)
+        print("\nTopologia em Anel criada:")
+        print("  " + " -- ".join([f"router{i}" for i in range(1, args.num_roteadores + 1)]) + f" -- router1")
     
     elif args.tipo == 'estrela':
         # Topologia em estrela: r1 é o centro, conectado a todos os outros
@@ -154,13 +158,38 @@ def main():
         for i in range(2, args.num_roteadores + 1):
             router = f"router{i}"
             links[router] = [central]
+        
+        # Representação visual da topologia estrela
+        print("\nTopologia em Estrela criada:")
+        print("  router1 (central)")
+        for i in range(2, args.num_roteadores + 1):
+            print(f"  |-- router{i}")
     
     elif args.tipo == 'custom' and args.conexoes:
         # Topologia personalizada a partir de string
         for conn_str in args.conexoes.split(';'):
             if ':' in conn_str:
                 router, connections = conn_str.split(':')
-                links[router] = connections.split(',')
+                if not router.strip():
+                    continue
+                connections_list = [c.strip() for c in connections.split(',') if c.strip()]
+                links[router.strip()] = connections_list
+        
+        # Visualização da topologia personalizada
+        print("\nTopologia Personalizada criada:")
+        for router, connections in links.items():
+            print(f"  {router} conectado a: {', '.join(connections)}")
+    else:
+        if args.tipo == 'custom':
+            print("Erro: Conexões personalizadas não fornecidas. Usando topologia em linha como padrão.")
+            # Criar topologia em linha como fallback
+            for i in range(1, args.num_roteadores + 1):
+                router = f"router{i}"
+                links[router] = []
+                if i > 1:
+                    links[router].append(f"router{i-1}")
+                if i < args.num_roteadores:
+                    links[router].append(f"router{i+1}")
     
     # Gera o conteúdo do docker-compose
     compose_content = gerar_docker_compose(args.num_roteadores, links)
@@ -169,15 +198,22 @@ def main():
     with open(args.output, 'w') as f:
         f.write(compose_content)
     
-    print(f"Arquivo {args.output} gerado com sucesso!")
+    print(f"\nArquivo {args.output} gerado com sucesso!")
     print(f"Topologia: {args.tipo} com {args.num_roteadores} roteadores/subredes")
-    print("Conexões entre roteadores:")
+    print("\nConexões entre roteadores:")
     for router, connections in links.items():
-        print(f"  {router} -> {', '.join(connections)}")
+        print(f"  {router} → {', '.join(connections)}")
+    
     print("\nCada subrede possui um roteador principal e 2 hosts.")
     print("Configuração de subredes:")
     for i in range(1, args.num_roteadores + 1):
-        print(f"  subnet_{i}: 172.20.{i}.0/24 (router{i}, host{i}a, host{i}b)")
+        if f"router{i}" in links:
+            print(f"  subnet_{i}: 172.20.{i}.0/24 (router{i}, host{i}a, host{i}b)")
+    
+    print("\nPara executar a simulação:")
+    print("  docker-compose -f ./docker-compose.yml up -d")
+    print("\nPara verificar os logs:")
+    print("  docker-compose logs -f")
 
 if __name__ == "__main__":
     main()
