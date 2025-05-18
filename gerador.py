@@ -115,10 +115,8 @@ def main():
                              'Cada roteador gerencia uma subrede com 2 hosts.')
     parser.add_argument('-o', '--output', type=str, default='docker-compose.yml',
                         help='Nome do arquivo de saída (padrão: docker-compose.yml)')
-    parser.add_argument('-t', '--tipo', type=str, choices=['linha', 'anel', 'estrela', 'custom'], default='linha',
-                        help='Tipo de topologia: linha, anel, estrela ou custom (padrão: linha)')
-    parser.add_argument('-c', '--conexoes', type=str, default='',
-                        help='Formato para conexões personalizadas: "router1:router2,router3;router2:router1,router3"')
+    parser.add_argument('-t', '--tipo', type=str, choices=['linha', 'anel', 'estrela'], default='linha',
+                        help='Tipo de topologia: linha, anel ou estrela (padrão: linha)')
     
     args = parser.parse_args()
     
@@ -164,32 +162,6 @@ def main():
         print("  router1 (central)")
         for i in range(2, args.num_roteadores + 1):
             print(f"  |-- router{i}")
-    
-    elif args.tipo == 'custom' and args.conexoes:
-        # Topologia personalizada a partir de string
-        for conn_str in args.conexoes.split(';'):
-            if ':' in conn_str:
-                router, connections = conn_str.split(':')
-                if not router.strip():
-                    continue
-                connections_list = [c.strip() for c in connections.split(',') if c.strip()]
-                links[router.strip()] = connections_list
-        
-        # Visualização da topologia personalizada
-        print("\nTopologia Personalizada criada:")
-        for router, connections in links.items():
-            print(f"  {router} conectado a: {', '.join(connections)}")
-    else:
-        if args.tipo == 'custom':
-            print("Erro: Conexões personalizadas não fornecidas. Usando topologia em linha como padrão.")
-            # Criar topologia em linha como fallback
-            for i in range(1, args.num_roteadores + 1):
-                router = f"router{i}"
-                links[router] = []
-                if i > 1:
-                    links[router].append(f"router{i-1}")
-                if i < args.num_roteadores:
-                    links[router].append(f"router{i+1}")
     
     # Gera o conteúdo do docker-compose
     compose_content = gerar_docker_compose(args.num_roteadores, links)

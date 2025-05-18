@@ -2,3 +2,7 @@
 *.js
 *.html
 *.tex
+*.json
+*.pnml
+*Resultados
+*resultados_testes

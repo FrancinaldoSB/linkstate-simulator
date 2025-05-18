@@ -88,71 +88,6 @@ def configure_routing(gateway_ip):
         log(f"Erro ao configurar roteamento: {e}")
         return False
 
-def test_connectivity():
-    """Testa conectividade com outras subredes."""
-    try:
-        # Testar gateway primeiro
-        my_ip = get_ip_info()
-        if my_ip:
-            gateway_ip = find_gateway(my_ip)
-            log(f"Testando conectividade com gateway {gateway_ip}...")
-            
-            ping_cmd = subprocess.run(
-                ["ping", "-c", "1", "-W", "2", gateway_ip], 
-                capture_output=True, 
-                text=True,
-                check=False
-            )
-            
-            if ping_cmd.returncode == 0:
-                log(f"Gateway {gateway_ip} está acessível")
-            else:
-                log(f"ALERTA: Gateway {gateway_ip} não está respondendo!")
-                # Tentar reconfigurar o roteamento
-                configure_routing(gateway_ip)
-        
-        # Obter tabela de roteamento atual
-        route_table = subprocess.run(["ip", "route"], capture_output=True, text=True).stdout
-        log(f"Rotas atuais: {route_table}")
-        
-        # Tenta pingar IPs em diferentes subredes
-        for subnet in range(1, 4):  # Limitando a 3 subredes para este teste
-            target = f"172.20.{subnet}.100"  # Tenta pingar o host 'a' de cada subrede
-            
-            # Verificar a rota para este destino
-            trace_cmd = subprocess.run(
-                ["traceroute", "-n", "-w", "1", "-q", "1", target],
-                capture_output=True,
-                text=True,
-                check=False
-            )
-            
-            log(f"Rota para {target}: {trace_cmd.stdout}")
-            
-            # Tentar ping
-            log(f"Testando ping para {target}...")
-            ping_cmd = subprocess.run(
-                ["ping", "-c", "1", "-W", "2", target], 
-                capture_output=True, 
-                text=True,
-                check=False
-            )
-            
-            if ping_cmd.returncode == 0:
-                log(f"Conectividade OK com {target}")
-            else:
-                log(f"Falha ao conectar com {target} - tentando rota alternativa...")
-                
-                # Tentar obter a subrede do destino
-                dest_subnet = target.split('.')[2]
-                my_subnet = my_ip.split('.')[2]
-                
-                if dest_subnet != my_subnet:
-                    # Tentativa adicional para redes não-locais
-                    log("Verificando rotas possíveis...")
-    except Exception as e:
-        log(f"Erro ao testar conectividade: {e}")
-
 def main():
     log("Iniciando configuração de host...")
     
@@ -177,11 +112,11 @@ def main():
     else:
         log("Falha na configuração de roteamento")
     
-    # Loop principal
+    # Loop principal - apenas mantém o host em execução sem testes periódicos
+    log("Host configurado e em execução.")
     while True:
-        # Testar conectividade periodicamente
-        test_connectivity()
-        time.sleep(30)  # Espera 30 segundos antes de testar novamente
+        # Apenas mantenha o processo vivo sem gerar logs excessivos
+        time.sleep(300)  # Espera 5 minutos
 
 if __name__ == "__main__":
     main()

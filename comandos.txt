@@ -1,0 +1,3 @@
+./gerador.py -t linha -n 5
+./gerador.py -t anel -n 6
+./gerador.py -t estrela -n 7
