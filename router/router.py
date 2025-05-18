@@ -70,19 +70,16 @@ class LSDB:
     def get_topologia(self) -> Dict[str, Dict[str, int]]:
         grafo = {}
         
-        # Primeiro, garante que todos os roteadores estejam no grafo
         for lsa in self.lsas.values():
             grafo[lsa.id] = {}
-            # Adiciona também todos os vizinhos como nós no grafo
             for vizinho_id in lsa.vizinhos:
                 if vizinho_id not in grafo:
                     grafo[vizinho_id] = {}
         
-        # Depois, preenche as conexões
+
         for lsa in self.lsas.values():
             for vizinho_id, vizinho in lsa.vizinhos.items():
                 grafo[lsa.id][vizinho_id] = vizinho.peso
-                # Adiciona a conexão reversa se ainda não existir
                 if vizinho_id in grafo and lsa.id not in grafo[vizinho_id]:
                     grafo[vizinho_id][lsa.id] = vizinho.peso
                     
@@ -91,14 +88,13 @@ class LSDB:
 
 class TabelaRotas:
     def __init__(self, grafo: Dict[str, Dict[str, int]], origem: str):
-        self.rotas: Dict[str, Tuple[str, int]] = {}  # destino: (via, custo)
+        self.rotas: Dict[str, Tuple[str, int]] = {} 
         if origem in grafo:
             self._dijkstra(grafo, origem)
         else:
             log(f"ERRO: Origem {origem} não existe no grafo")
 
     def _dijkstra(self, grafo: Dict[str, Dict[str, int]], origem: str):
-        # Inicializa dist e prev para todos os nós no grafo
         dist = {n: float('inf') for n in grafo}
         prev = {n: None for n in grafo}
         dist[origem] = 0
@@ -129,13 +125,12 @@ class TabelaRotas:
                     prev[vizinho] = atual
                     heapq.heappush(heap, (alt, vizinho))
 
-        # Calcula rotas apenas para nós que foram alcançados
         for destino in grafo:
             if destino != origem and prev[destino] is not None:
                 via = destino
                 while prev[via] != origem and prev[via] is not None:
                     via = prev[via]
-                if prev[via] == origem:  # Garante que existe caminho
+                if prev[via] == origem: 
                     self.rotas[destino] = (via, dist[destino])
 
 
@@ -147,14 +142,12 @@ class Router:
         self.seq = 0
         self.lsdb = LSDB()
         
-        # Adiciona o próprio LSA ao LSDB
         self.lsdb.atualizar_lsa(self.criar_lsa())
         
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind((self.ip, PORTA))
         log(f"{self.id} ouvindo na porta {PORTA} ({self.ip})")
         
-        # Configurar rotas para subredes diretamente conectadas
         self._configurar_rotas_iniciais()
         
         threading.Thread(target=self.escutar_lsa, daemon=True).start()
@@ -163,13 +156,10 @@ class Router:
     def _configurar_rotas_iniciais(self):
         log(f"{self.id} configurando rotas iniciais...")
         
-        # Ativar IP Forwarding - método alternativo que não depende do sysctl
         try:
-            # Primeiro tentamos usar sysctl se estiver disponível
             subprocess.run(["sysctl", "-w", "net.ipv4.ip_forward=1"], check=False)
             log(f"{self.id} IP Forwarding ativado via sysctl")
         except FileNotFoundError:
-            # Se sysctl não estiver disponível, tentamos escrever diretamente no arquivo
             try:
                 with open("/proc/sys/net/ipv4/ip_forward", "w") as f:
                     f.write("1")
@@ -177,11 +167,9 @@ class Router:
             except Exception as e:
                 log(f"{self.id} Não foi possível ativar IP Forwarding: {e}. O encaminhamento de pacotes pode não funcionar.")
         
-        # Configurar interfaces com endereços IP
         interfaces = subprocess.run(["ip", "addr"], capture_output=True, text=True, check=False).stdout
         log(f"{self.id} interfaces: {interfaces}")
         
-        # Não limpar rotas, apenas listar para debug
         rotas = subprocess.run(["ip", "route"], capture_output=True, text=True, check=False).stdout
         log(f"{self.id} rotas iniciais: {rotas}")
 
@@ -241,29 +229,21 @@ class Router:
 
     def aplicar_rotas(self, tabela: TabelaRotas):
         try:
-            # Listar as rotas atuais para referência
             rotas_antes = subprocess.run(["ip", "route"], capture_output=True, text=True, check=False).stdout
             log(f"{self.id} rotas antes: {rotas_antes}")
             
-            # NÃO limpar a tabela de rotas - isso remove rotas essenciais
-            # Apenas adicionar ou modificar rotas conforme necessário
-            
-            # Adicionar rotas para destinos conhecidos
             for destino, (via, custo) in tabela.rotas.items():
                 try:
                     if destino in self.lsdb.lsas and via in self.lsdb.lsas:
                         destino_ip = self.lsdb.lsas[destino].ip
                         via_ip = self.lsdb.lsas[via].ip
                         
-                        # Verificar se já existe uma rota para este destino
                         rede_destino = '.'.join(destino_ip.split('.')[:3]) + '.0/24'
                         
                         log(f"{self.id} adicionando rota para {destino} ({rede_destino}) via {via} ({via_ip}) com custo {custo}")
                         
-                        # Usar replace em vez de add para evitar erros de rota duplicada
-                        # E não adicionar rota direta para nossos vizinhos - Docker já faz isso
                         if not any(viz.ip == destino_ip for viz in self.vizinhos.values()):
-                            cmd = ["ip", "route", "replace", rede_destino, "via", via_ip]
+                            cmd = ["ip", "route", "replace", rede_destino, "via", via_ip] 
                             result = subprocess.run(cmd, capture_output=True, text=True, check=False)
                             if result.returncode != 0:
                                 log(f"{self.id} erro ao adicionar rota: {result.stderr}")
@@ -274,7 +254,6 @@ class Router:
                 except Exception as e:
                     log(f"{self.id} erro ao adicionar rota para {destino}: {e}")
             
-            # Listar rotas após as modificações
             rotas_depois = subprocess.run(["ip", "route"], capture_output=True, text=True, check=False).stdout
             log(f"{self.id} rotas depois: {rotas_depois}")
         except Exception as e:
@@ -296,7 +275,7 @@ if __name__ == "__main__":
             log(f"AVISO: IP para {nome} não encontrado nas variáveis de ambiente")
 
     r = Router(my_id, my_ip, vizinhos)
-    # Garantir que o LSA inicial seja enviado imediatamente
+
     r.enviar_lsa()
     
     while True:

@@ -11,49 +11,40 @@ import numpy as np
 import os
 from datetime import datetime
 
-# Cores para saída no terminal
 class Colors:
-    GREEN = '\033[92m'  # Verde para sucesso
-    RED = '\033[91m'    # Vermelho para falha
-    YELLOW = '\033[93m' # Amarelo para aviso
-    BLUE = '\033[94m'   # Azul para informação
-    ENDC = '\033[0m'    # Resetar cor
+    GREEN = '\033[92m' 
+    RED = '\033[91m' 
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'  
+    ENDC = '\033[0m'   
 
 def print_color(text, color):
-    """Imprime texto colorido no terminal."""
     print(f"{color}{text}{Colors.ENDC}")
 
 def format_table(rows, headers=None):
-    """Formata uma tabela simples em texto sem dependências externas."""
     if not rows:
         return ""
-    
-    # Determinar larguras máximas para cada coluna
+
     num_cols = len(rows[0])
     col_widths = [0] * num_cols
-    
-    # Adicionar cabeçalhos se existirem
+
     all_rows = []
     if headers:
         all_rows.append(headers)
     all_rows.extend(rows)
-    
-    # Calcular largura máxima para cada coluna
+
     for row in all_rows:
         for i, cell in enumerate(row):
             col_widths[i] = max(col_widths[i], len(str(cell)))
-    
-    # Construir a tabela
+
     result = []
-    
-    # Adicionar linha de cabeçalho
+
     if headers:
         header_line = "| " + " | ".join(str(headers[i]).ljust(col_widths[i]) for i in range(num_cols)) + " |"
         result.append(header_line)
         separator = "+-" + "-+-".join("-" * col_widths[i] for i in range(num_cols)) + "-+"
         result.append(separator)
-    
-    # Adicionar linhas de dados
+
     for row in rows:
         data_line = "| " + " | ".join(str(row[i]).ljust(col_widths[i]) for i in range(num_cols)) + " |"
         result.append(data_line)
@@ -61,7 +52,6 @@ def format_table(rows, headers=None):
     return "\n".join(result)
 
 def run_command(command: List[str]) -> Tuple[int, str, str]:
-    """Executa um comando e retorna o código de retorno, stdout e stderr."""
     process = subprocess.run(command, 
                             stdout=subprocess.PIPE, 
                             stderr=subprocess.PIPE, 
@@ -69,7 +59,6 @@ def run_command(command: List[str]) -> Tuple[int, str, str]:
     return process.returncode, process.stdout, process.stderr
 
 def get_containers() -> Dict[str, Dict]:
-    """Obtém a lista de contêineres Docker em execução e suas informações."""
     returncode, stdout, stderr = run_command(["docker", "ps", "--format", "{{.Names}},{{.ID}},{{.Image}}"])
     
     if returncode != 0:
@@ -82,7 +71,6 @@ def get_containers() -> Dict[str, Dict]:
             continue
         name, container_id, image = line.split(',')
         if "linkstate-simulator" in name:
-            # Extrai o tipo e número do contêiner (ex: router1, host2a)
             match = re.match(r'linkstate-simulator_([a-z]+)([0-9]+[a-z]*)_1', name)
             if match:
                 container_type, container_num = match.groups()
@@ -97,7 +85,6 @@ def get_containers() -> Dict[str, Dict]:
     return containers
 
 def get_container_info(container_id: str) -> Dict:
-    """Obtém informações detalhadas sobre um contêiner."""
     returncode, stdout, stderr = run_command(["docker", "inspect", container_id])
     
     if returncode != 0:
@@ -129,14 +116,12 @@ def get_container_info(container_id: str) -> Dict:
         return {}
 
 def test_ping_latency(source_container: str, target_ip: str, count: int = 5) -> Tuple[bool, float]:
-    """Testa a latência do ping entre dois contêineres."""
     command = ["docker", "exec", source_container, "ping", "-c", str(count), "-q", target_ip]
     returncode, stdout, stderr = run_command(command)
     
     if returncode != 0:
         return False, 0.0
-    
-    # Extrair a latência média do resultado do ping
+
     match = re.search(r'min/avg/max/mdev = [\d.]+/([\d.]+)/[\d.]+/[\d.]+', stdout)
     if match:
         avg_latency = float(match.group(1))
@@ -145,10 +130,8 @@ def test_ping_latency(source_container: str, target_ip: str, count: int = 5) -> 
     return True, 0.0
 
 def test_convergence_time():
-    """Testa o tempo de convergência da topologia de rede."""
     print_color("\n===== Teste de Tempo de Convergência da Topologia =====", Colors.BLUE)
-    
-    # Obter lista de contêineres antes do teste
+
     containers = get_containers()
     if not containers:
         print_color("Nenhum contêiner encontrado. Certifique-se de que a rede está em execução.", Colors.RED)
@@ -158,27 +141,23 @@ def test_convergence_time():
     hosts = [name for name, info in containers.items() if info["type"] == "host"]
     
     print_color(f"Testando convergência com {len(routers)} roteadores e {len(hosts)} hosts", Colors.BLUE)
-    
-    # Reiniciar os serviços de roteamento em cada roteador para simular reinicialização da rede
+
     print_color("Reiniciando serviços de roteamento...", Colors.YELLOW)
     for router in routers:
         restart_cmd = ["docker", "exec", router, "pkill", "-f", "python.*router.py"]
         run_command(restart_cmd)
-        # Iniciar novamente o serviço
+
         start_cmd = ["docker", "exec", "-d", router, "python", "/app/router.py"]
         run_command(start_cmd)
     
     print_color("Serviços de roteamento reiniciados. Testando convergência...", Colors.YELLOW)
-    
-    # Define início para medição do tempo
+
     start_time = time.time()
-    
-    # Monitorando a convergência da rede - verificamos se todos os hosts conseguem se pingar
-    max_attempts = 30  # Máximo de tentativas (30 * 2 segundos = 60 segundos)
+
+    max_attempts = 30 
     converged = False
     attempt = 0
-    
-    # Obter informações detalhadas dos hosts para os testes
+
     host_details = {}
     for host in hosts:
         host_details[host] = get_container_info(containers[host]["id"])
@@ -186,18 +165,15 @@ def test_convergence_time():
     while attempt < max_attempts and not converged:
         attempt += 1
         print_color(f"Tentativa {attempt}/{max_attempts}...", Colors.YELLOW)
-        
-        # Testar conectividade entre alguns pares de hosts distantes
+ 
         all_successful = True
-        
-        # Selecionar alguns hosts para testar (um de cada subrede, se possível)
+
         test_hosts = {}
         for host, details in host_details.items():
             for subnet_num, ip in details["ips"].items():
                 if subnet_num not in test_hosts:
                     test_hosts[subnet_num] = (host, ip)
-        
-        # Se temos hosts em pelo menos 2 subredes diferentes, teste a conectividade entre eles
+
         if len(test_hosts) >= 2:
             subnets = list(test_hosts.keys())
             for i in range(len(subnets) - 1):
@@ -205,8 +181,7 @@ def test_convergence_time():
                 _, target_ip = test_hosts[subnets[i+1]]
                 
                 print_color(f"Testando ping de {source_host} para {target_ip}...", Colors.YELLOW)
-                
-                # Testar ping básico (sem medir latência ainda)
+            
                 command = ["docker", "exec", source_host, "ping", "-c", "1", "-W", "2", target_ip]
                 returncode, _, _ = run_command(command)
                 
@@ -223,11 +198,9 @@ def test_convergence_time():
         if all_successful:
             converged = True
             break
-        
-        # Aguardar antes da próxima tentativa
+
         time.sleep(2)
-    
-    # Calcular tempo decorrido
+
     elapsed_time = time.time() - start_time
     
     if converged:
@@ -238,50 +211,41 @@ def test_convergence_time():
     return converged, elapsed_time
 
 def generate_latency_heatmap(host_latencies: Dict[str, Dict[str, float]], output_file: str = "latency_heatmap.png"):
-    """Gera um heatmap das latências entre hosts."""
     hosts = sorted(list(host_latencies.keys()))
     num_hosts = len(hosts)
-    
-    # Criar matriz de latências
+
     latency_matrix = np.zeros((num_hosts, num_hosts))
     for i, source in enumerate(hosts):
         for j, target in enumerate(hosts):
             if source == target:
-                latency_matrix[i][j] = 0  # Diagonal (latência para si mesmo)
+                latency_matrix[i][j] = 0  
             elif target in host_latencies[source]:
                 latency_matrix[i][j] = host_latencies[source][target]
             else:
-                latency_matrix[i][j] = np.nan  # Sem conexão
-    
-    # Configurar o plot
+                latency_matrix[i][j] = np.nan  
+
     plt.figure(figsize=(10, 8))
     plt.imshow(latency_matrix, cmap='viridis', interpolation='nearest')
-    
-    # Configurar labels e título
+
     plt.title('Latência entre Hosts (ms)', fontsize=16)
     plt.xticks(range(num_hosts), hosts, rotation=45, ha='right')
     plt.yticks(range(num_hosts), hosts)
-    
-    # Adicionar valores na matriz
+
     for i in range(num_hosts):
         for j in range(num_hosts):
             if not np.isnan(latency_matrix[i][j]):
-                if latency_matrix[i][j] > 0:  # Não mostrar zeros na diagonal
+                if latency_matrix[i][j] > 0: 
                     plt.text(j, i, f"{latency_matrix[i][j]:.2f}", ha='center', va='center', 
                              color='white' if latency_matrix[i][j] > np.nanmean(latency_matrix) else 'black')
     
     plt.colorbar(label='Latência (ms)')
     plt.tight_layout()
     
-    # Salvar o gráfico
     plt.savefig(output_file)
     print_color(f"Gráfico de latência salvo como {output_file}", Colors.GREEN)
     
-    # Opcional: mostrar o gráfico
-    # plt.show()
 
 def save_statistics_to_file(stats: Dict, filename: str = "latency_stats.txt"):
-    """Salva estatísticas em um arquivo texto."""
     with open(filename, 'w') as f:
         f.write(f"Estatísticas de Latência - {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
         f.write("="*50 + "\n\n")
@@ -292,41 +256,32 @@ def save_statistics_to_file(stats: Dict, filename: str = "latency_stats.txt"):
     print_color(f"Estatísticas salvas no arquivo {filename}", Colors.GREEN)
 
 def test_ping_latency_all_hosts():
-    """Testa a latência de ping entre todos os hosts da rede."""
     print_color("\n===== Teste de Latência de Ping entre Hosts =====", Colors.BLUE)
     
-    # Obter lista de contêineres
     containers = get_containers()
     if not containers:
         print_color("Nenhum contêiner encontrado. Certifique-se de que a rede está em execução.", Colors.RED)
         return []
     
-    # Filtrar apenas os hosts
     hosts = {name: info for name, info in containers.items() if info["type"] == "host"}
     
     print_color(f"Testando latência entre {len(hosts)} hosts", Colors.BLUE)
     
-    # Obter detalhes de cada host
     host_details = {}
     for name, info in hosts.items():
         host_details[name] = get_container_info(info["id"])
     
-    # Preparar resultados
     results = []
     
-    # Dicionário para armazenar latências para o gráfico
     host_latencies = {host: {} for host in host_details.keys()}
     
-    # Número de pings para cada teste
     ping_count = 1
-    
-    # Testar latência entre cada par de hosts
+
     for source_name, source_info in host_details.items():
         for target_name, target_info in host_details.items():
             if source_name == target_name:
                 continue
             
-            # Pegar um IP do host de destino
             target_ip = None
             for subnet, ip in target_info["ips"].items():
                 target_ip = ip
@@ -348,12 +303,10 @@ def test_ping_latency_all_hosts():
                 print_color(f"Falha no teste de ping", Colors.RED)
                 results.append([source_name, target_name, "N/A", "✗"])
     
-    # Mostrar resultados em tabela
     if results:
         headers = ["Origem", "Destino", "Latência Média", "Status"]
         print("\n" + format_table(results, headers))
         
-        # Calcular estatísticas
         latencies = [float(r[2].replace(" ms", "")) for r in results if r[3] == "✓"]
         if latencies:
             avg_latency = statistics.mean(latencies)
@@ -367,15 +320,12 @@ def test_ping_latency_all_hosts():
             print(f"Máxima: {max_latency:.3f} ms")
             print(f"Mediana: {median_latency:.3f} ms")
             
-            # Nome dos arquivos com timestamp para evitar sobrescrever
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             heatmap_file = f"latency_heatmap_{timestamp}.png"
             stats_file = f"latency_stats_{timestamp}.txt"
             
-            # Gerar gráfico de calor das latências
             generate_latency_heatmap(host_latencies, heatmap_file)
             
-            # Salvar estatísticas em arquivo
             stats = {
                 "Média": avg_latency,
                 "Mínima": min_latency,
