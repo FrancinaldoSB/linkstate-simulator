@@ -60,6 +60,9 @@ Após gerar o arquivo docker-compose.yml, inicie os contêineres com:
 # Build e iniciar os contêineres
 docker-compose up --build
 
+# Caso precise refazer o build use:
+docker-compose down
+
 # Verificar se os contêineres estão em execução
 docker ps
 
