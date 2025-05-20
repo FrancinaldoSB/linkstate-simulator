@@ -18,21 +18,9 @@ Para executar este projeto, você precisará de:
 
 ## Justificativa do uso do Protocolo UDP
 
-O protocolo UDP (User Datagram Protocol) foi escolhido para a comunicação entre roteadores neste simulador em vez do TCP pelos seguintes motivos:
-
-1. **Menor overhead de comunicação**: O UDP não exige estabelecimento de conexão (handshake triplo) nem mantém estado da conexão, permitindo um funcionamento mais eficiente para o envio frequente de mensagens LSA entre roteadores.
-
-2. **Comportamento mais próximo dos protocolos reais de roteamento**: Protocolos como OSPF utilizam IP diretamente sem depender de TCP, tornando o UDP uma opção mais realista para simulação.
-
-3. **Melhor desempenho para broadcast/multicast**: As mensagens de atualização de estado dos links geralmente são enviadas para múltiplos roteadores simultaneamente, um cenário onde UDP tem melhor desempenho que TCP.
-
-4. **Tolerância à perda de pacotes**: Na implementação do protocolo Link State, a perda ocasional de uma mensagem LSA não é catastrófica, pois atualizações periódicas garantem a eventual consistência da rede.
-
-5. **Simplicidade de implementação**: O modelo de comunicação sem conexão do UDP simplifica a implementação do simulador, permitindo que os roteadores se comuniquem sem gerenciar múltiplas conexões TCP.
-
-6. **Menor latência**: A natureza sem conexão do UDP resulta em menor latência entre o envio e recebimento de mensagens, importante para a rápida convergência da rede.
-
-Esta escolha reflete o equilíbrio entre realismo, desempenho e simplicidade de implementação em um ambiente de simulação de rede.
+O protocolo UDP foi escolhido como mecanismo de transporte para a comunicação entre os roteadores
+por várias razões técnicas. Primeiramente, em um protocolo de roteamento real como OSPF, a velocidade na troca de informações topológicas é crucial para garantir rápida convergência da rede. O UDP, por não possuir o overhead da negociação de conexão (handshake) e verificação de entrega como no TCP, proporciona uma comunicação mais ágil entre os roteadores.
+Além disso, em um cenário de rede real, pacotes podem ser ocasionalmente perdidos sem que isso comprometa o funcionamento do protocolo Link State como um todo - os LSAs são enviados periodicamente, garantindo que eventuais perdas sejam compensadas em transmissões subsequentes. Esta caracterı́stica reflete de maneira mais próxima o comportamento de protocolos de roteamento reais, que são projetados com tolerância a falhas de comunicação.
 
 ## Como a topologia foi construída​
 
