@@ -16,6 +16,68 @@ Para executar este projeto, você precisará de:
 - Docker Compose 1.27 ou superior
 - Python 3.8 ou superior
 
+## Justificativa do uso do Protocolo UDP
+
+O protocolo UDP (User Datagram Protocol) foi escolhido para a comunicação entre roteadores neste simulador em vez do TCP pelos seguintes motivos:
+
+1. **Menor overhead de comunicação**: O UDP não exige estabelecimento de conexão (handshake triplo) nem mantém estado da conexão, permitindo um funcionamento mais eficiente para o envio frequente de mensagens LSA entre roteadores.
+
+2. **Comportamento mais próximo dos protocolos reais de roteamento**: Protocolos como OSPF utilizam IP diretamente sem depender de TCP, tornando o UDP uma opção mais realista para simulação.
+
+3. **Melhor desempenho para broadcast/multicast**: As mensagens de atualização de estado dos links geralmente são enviadas para múltiplos roteadores simultaneamente, um cenário onde UDP tem melhor desempenho que TCP.
+
+4. **Tolerância à perda de pacotes**: Na implementação do protocolo Link State, a perda ocasional de uma mensagem LSA não é catastrófica, pois atualizações periódicas garantem a eventual consistência da rede.
+
+5. **Simplicidade de implementação**: O modelo de comunicação sem conexão do UDP simplifica a implementação do simulador, permitindo que os roteadores se comuniquem sem gerenciar múltiplas conexões TCP.
+
+6. **Menor latência**: A natureza sem conexão do UDP resulta em menor latência entre o envio e recebimento de mensagens, importante para a rápida convergência da rede.
+
+Esta escolha reflete o equilíbrio entre realismo, desempenho e simplicidade de implementação em um ambiente de simulação de rede.
+
+## Como a topologia foi construída​
+
+A topologia de rede neste simulador é construída utilizando uma abordagem baseada em contêineres Docker, proporcionando isolamento e facilidade de configuração. O processo de construção da topologia segue estas etapas:
+
+### 1. Estrutura básica
+
+- **Contêineres Docker**: Cada dispositivo da rede (roteador ou host) é implementado como um contêiner Docker isolado
+- **Redes Docker**: As conexões entre dispositivos são implementadas usando redes bridge do Docker
+- **Subredes IP**: Cada segmento de rede utiliza uma subnet diferente (172.20.X.0/24)
+
+### 2. Componentes da topologia
+
+- **Roteadores**: Contêineres executando o script `router.py`, que implementa o protocolo Link State
+- **Hosts**: Contêineres executando o script `host.py`, configurados para utilizar seus respectivos roteadores como gateway
+- **Links**: Conexões entre roteadores representadas por interfaces de rede virtuais em subredes compartilhadas
+
+### 3. Geração automática
+
+O script `gerador.py` automatiza a criação de diferentes topologias através da geração de um arquivo `docker-compose.yml` que define:
+
+- Os contêineres de roteadores e suas conexões
+- Os contêineres de hosts conectados a cada roteador (dois por roteador)
+- As redes virtuais que implementam as subredes
+- As configurações de endereçamento IP para cada interface
+- Variáveis de ambiente que informam a cada roteador sobre seus vizinhos
+
+### 4. Tipos de topologia suportados
+
+- **Topologia em linha**: Roteadores conectados sequencialmente (R1 ↔ R2 ↔ R3 ↔ ... ↔ Rn)
+- **Topologia em anel**: Roteadores formando um circuito fechado (R1 ↔ R2 ↔ ... ↔ Rn ↔ R1)
+- **Topologia em estrela**: Um roteador central conectado a todos os outros (R1 ↔ R2, R1 ↔ R3, ..., R1 ↔ Rn)
+
+### 5. Estabelecimento dinâmico de rotas
+
+Após a inicialização dos contêineres:
+
+1. Cada roteador descobre seus vizinhos através das variáveis de ambiente
+2. Os roteadores trocam LSAs contendo informações sobre suas conexões
+3. Cada roteador constrói sua LSDB com informações de toda a rede
+4. O algoritmo de Dijkstra é executado para calcular as melhores rotas
+5. As tabelas de roteamento são configuradas no sistema operacional de cada contêiner usando comandos `ip route`
+
+Esta abordagem permite simular de forma realista o comportamento de uma rede utilizando o protocolo Link State, com contêineres Docker proporcionando o isolamento necessário entre os diferentes nós da rede.
+
 ## Instalando dependências do Python
 
 O projeto requer algumas bibliotecas Python para executar os scripts de teste e visualização. Para instalar as dependências:
